@@ -1,5 +1,7 @@
 package fly.speedmeter.grub;
 
+import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -8,37 +10,50 @@ import android.location.GpsStatus;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.SystemClock;
-import android.preference.PreferenceManager;
-import android.support.v7.app.ActionBarActivity;
-import android.text.TextUtils;
+import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.os.Bundle;
-import android.support.v7.widget.Toolbar;
+import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.text.SpannableString;
+import android.text.TextUtils;
 import android.text.style.RelativeSizeSpan;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Chronometer;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.gc.materialdesign.views.ProgressBarCircularIndeterminate;
 import com.gc.materialdesign.widgets.Dialog;
 import com.google.gson.Gson;
+import com.karumi.dexter.Dexter;
+import com.karumi.dexter.PermissionToken;
+import com.karumi.dexter.listener.PermissionDeniedResponse;
+import com.karumi.dexter.listener.PermissionGrantedResponse;
+import com.karumi.dexter.listener.PermissionRequest;
+import com.karumi.dexter.listener.single.PermissionListener;
 import com.melnykov.fab.FloatingActionButton;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Calendar;
 import java.util.Locale;
 
 
-public class MainActivity extends ActionBarActivity implements LocationListener, GpsStatus.Listener {
+
+
+
+public class MainActivity extends Activity implements LocationListener, GpsStatus.Listener {
 
     private SharedPreferences  sharedPreferences;
     private LocationManager mLocationManager;
     private static Data data;
 
-    private Toolbar toolbar;
     private FloatingActionButton fab;
     private FloatingActionButton refresh;
     private ProgressBarCircularIndeterminate progressBarCircularIndeterminate;
@@ -48,29 +63,59 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     private TextView currentSpeed;
     private TextView maxSpeed;
     private TextView averageSpeed;
-    private TextView distance;
-    private Chronometer time;
+
+    private boolean logData = false;
+
     private Data.OnGpsServiceUpdate onGpsServiceUpdate;
 
-    private boolean firstfix;
+    private boolean firstfix, firstLog = true;
+
+    String log = "";
+    int generation = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Dexter.withActivity(this).withPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE).withListener(new PermissionListener() {
+            @Override
+            public void onPermissionGranted(PermissionGrantedResponse response) {
+
+            }
+
+            @Override
+            public void onPermissionDenied(PermissionDeniedResponse response) {
+
+            }
+
+            @Override
+            public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {
+
+            }
+        }).check();
 
         data = new Data(onGpsServiceUpdate);
 
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        //setTitle("");
-        fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setVisibility(View.INVISIBLE);
+        fab = findViewById(R.id.fab);
+        fab.setVisibility(View.VISIBLE);
 
         refresh = (FloatingActionButton) findViewById(R.id.refresh);
         refresh.setVisibility(View.INVISIBLE);
+
+
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        mLocationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+
+        satellite = findViewById(R.id.satellite);
+        status = findViewById(R.id.status);
+        accuracy = findViewById(R.id.accuracy);
+        maxSpeed = findViewById(R.id.maxSpeed);
+        averageSpeed = findViewById(R.id.averageSpeed);
+
+        currentSpeed = findViewById(R.id.currentSpeed);
+        progressBarCircularIndeterminate = (ProgressBarCircularIndeterminate) findViewById(R.id.progressBarCircularIndeterminate);
+
+
 
         onGpsServiceUpdate = new Data.OnGpsServiceUpdate() {
             @Override
@@ -112,65 +157,18 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 
                 s = new SpannableString(String.format("%.3f %s", distanceTemp, distanceUnits));
                 s.setSpan(new RelativeSizeSpan(0.5f), s.length() - distanceUnits.length() - 1, s.length(), 0);
-                distance.setText(s);
+
             }
         };
 
-        mLocationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
-        satellite = (TextView) findViewById(R.id.satellite);
-        status = (TextView) findViewById(R.id.status);
-        accuracy = (TextView) findViewById(R.id.accuracy);
-        maxSpeed = (TextView) findViewById(R.id.maxSpeed);
-        averageSpeed = (TextView) findViewById(R.id.averageSpeed);
-        distance = (TextView) findViewById(R.id.distance);
-        time = (Chronometer) findViewById(R.id.time);
-        currentSpeed = (TextView) findViewById(R.id.currentSpeed);
-        progressBarCircularIndeterminate = (ProgressBarCircularIndeterminate) findViewById(R.id.progressBarCircularIndeterminate);
 
-        time.setText("00:00:00");
-        time.setOnChronometerTickListener(new Chronometer.OnChronometerTickListener() {
-            boolean isPair = true;
-            @Override
-            public void onChronometerTick(Chronometer chrono) {
-                long time;
-                if(data.isRunning()){
-                    time= SystemClock.elapsedRealtime() - chrono.getBase();
-                    data.setTime(time);
-                }else{
-                    time = data.getTime();
-                }
-
-                int h   = (int)(time /3600000);
-                int m = (int)(time  - h*3600000)/60000;
-                int s= (int)(time  - h*3600000 - m*60000)/1000 ;
-                String hh = h < 10 ? "0"+h: h+"";
-                String mm = m < 10 ? "0"+m: m+"";
-                String ss = s < 10 ? "0"+s: s+"";
-                chrono.setText(hh+":"+mm+":"+ss);
-
-                if (data.isRunning()){
-                    chrono.setText(hh+":"+mm+":"+ss);
-                } else {
-                    if (isPair) {
-                        isPair = false;
-                        chrono.setText(hh+":"+mm+":"+ss);
-                    }else{
-                        isPair = true;
-                        chrono.setText("");
-                    }
-                }
-
-            }
-        });
     }
 
     public void onFabClick(View v){
         if (!data.isRunning()) {
             fab.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_pause));
             data.setRunning(true);
-            time.setBase(SystemClock.elapsedRealtime() - data.getTime());
-            time.start();
             data.setFirstTime(true);
             startService(new Intent(getBaseContext(), GpsServices.class));
             refresh.setVisibility(View.INVISIBLE);
@@ -204,7 +202,23 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         }
 
         if (mLocationManager.getAllProviders().indexOf(LocationManager.GPS_PROVIDER) >= 0) {
-            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 500, 0, this);
+            Dexter.withActivity(MainActivity.this).withPermission(Manifest.permission.ACCESS_FINE_LOCATION).withListener(new PermissionListener() {
+                @Override
+                public void onPermissionGranted(PermissionGrantedResponse response) {
+                    mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 500, 0, MainActivity.this);
+                }
+
+                @Override
+                public void onPermissionDenied(PermissionDeniedResponse response) {
+
+                }
+
+                @Override
+                public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {
+
+                }
+            }).check();
+
         } else {
             Log.w("MainActivity", "No GPS location provider found. GPS data display will not be available.");
         }
@@ -213,7 +227,23 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
             showGpsDisabledDialog();
         }
 
-        mLocationManager.addGpsStatusListener(this);
+        Dexter.withActivity(MainActivity.this).withPermission(Manifest.permission.ACCESS_FINE_LOCATION).withListener(new PermissionListener() {
+            @Override
+            public void onPermissionGranted(PermissionGrantedResponse response) {
+                mLocationManager.addGpsStatusListener(MainActivity.this);
+            }
+
+            @Override
+            public void onPermissionDenied(PermissionDeniedResponse response) {
+
+            }
+
+            @Override
+            public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {
+
+            }
+        }).check();
+
     }
 
     @Override
@@ -299,6 +329,35 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
             SpannableString s = new SpannableString(String.format(Locale.ENGLISH, "%.0f %s", speed, units));
             s.setSpan(new RelativeSizeSpan(0.25f), s.length()-units.length()-1, s.length(), 0);
             currentSpeed.setText(s);
+            if(logData)
+            {
+                if(firstLog)
+                {
+
+                    String headers = "Generation" + ",";
+
+                    headers += "Timestamp" + ",";
+                    headers += "Speed" + ",";
+                    log = headers + "\n";
+                    firstLog = false;
+                }
+                else
+                {
+                    Calendar c = Calendar.getInstance();
+                    String currTime = "";
+                    currTime += c.get(Calendar.HOUR) + ":";
+                    currTime += c.get(Calendar.MINUTE) + ":";
+                    currTime += c.get(Calendar.SECOND);
+
+
+                    log += System.getProperty("line.separator");
+                    log += generation++ + ",";
+                    //log += System.currentTimeMillis() - logTime + ",";
+                    log += currTime + ",";
+                    log += speed + "\n";
+
+                }
+            }
         }
 
     }
@@ -356,11 +415,10 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     public void resetData(){
         fab.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_play));
         refresh.setVisibility(View.INVISIBLE);
-        time.stop();
+
         maxSpeed.setText("");
         averageSpeed.setText("");
-        distance.setText("");
-        time.setText("00:00:00");
+
         data = new Data(onGpsServiceUpdate);
     }
 
@@ -384,4 +442,84 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 
     @Override
     public void onProviderDisabled(String s) {}
+
+
+    public void goLog(View v)
+    {
+        Button btn = (Button) v;
+
+        if(btn.getText().equals("STRT"))
+        {
+            logData = true;
+            firstLog = true;
+            btn.setText("STOP");
+
+
+        }
+        else
+        {
+            writeLogToFile(log);
+            logData = false;
+            firstLog = true;
+            btn.setText("STRT");
+            generation = 0;
+        }
+    }
+    private void writeLogToFile(String log) {
+
+        Log.d("--------log", log);
+
+        Calendar c = Calendar.getInstance();
+        String filename = "SpeedMeter-" + c.get(Calendar.YEAR)
+                + "-" + c.get(Calendar.DAY_OF_WEEK_IN_MONTH) + "-"
+                + c.get(Calendar.HOUR) + "-" + c.get(Calendar.HOUR) + "-"
+                + c.get(Calendar.MINUTE) + "-" + c.get(Calendar.SECOND)
+                + ".csv";
+
+        File dir = new File(Environment.getExternalStorageDirectory()
+                + File.separator + "SpeedMeter" + File.separator
+                + "Logs" + File.separator + "Acceleration");
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+
+        File file = new File(dir, filename);
+
+        FileOutputStream fos;
+        byte[] data = log.getBytes();
+        try {
+            fos = new FileOutputStream(file);
+            fos.write(data);
+            fos.flush();
+            fos.close();
+
+            CharSequence text = "Log Saved";
+            int duration = Toast.LENGTH_SHORT;
+
+            Toast toast = Toast.makeText(this, text, duration);
+            toast.show();
+        } catch (FileNotFoundException e) {
+            CharSequence text = e.toString();
+            int duration = Toast.LENGTH_SHORT;
+
+            Toast toast = Toast.makeText(this, text, duration);
+            toast.show();
+        } catch (IOException e) {
+            // handle exception
+        } finally {
+            // Update the MediaStore so we can view the file without rebooting.
+            // Note that it appears that the ACTION_MEDIA_MOUNTED approach is
+            // now blocked for non-system apps on Android 4.4.
+            MediaScannerConnection.scanFile(this, new String[]
+                            {"file://" + Environment.getExternalStorageDirectory()}, null,
+                    new MediaScannerConnection.OnScanCompletedListener() {
+                        @Override
+                        public void onScanCompleted(final String path,
+                                                    final Uri uri) {
+
+                        }
+                    });
+        }
+    }
+
 }

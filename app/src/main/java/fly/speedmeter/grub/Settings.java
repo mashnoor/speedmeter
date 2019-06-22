@@ -1,20 +1,16 @@
 package fly.speedmeter.grub;
 
-import android.content.BroadcastReceiver;
-import android.content.SharedPreferences;
+import android.app.Activity;
 import android.os.Bundle;
 import android.preference.Preference;
-import android.preference.PreferenceActivity;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceGroup;
-import android.support.v4.app.NavUtils;
-import android.support.v7.app.ActionBarActivity;
 import android.view.MenuItem;
 
 /**
  * Created by fly on 19/04/15.
  */
-public class Settings extends ActionBarActivity {
+public class Settings extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,9 +18,7 @@ public class Settings extends ActionBarActivity {
         setContentView(R.layout.activity_settings);
 
         android.support.v7.widget.Toolbar toolbar = (android.support.v7.widget.Toolbar) findViewById(R.id.settingstoolbar);
-        setSupportActionBar(toolbar);
-        getSupportActionBar().setHomeButtonEnabled(true);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
 
         // Display the fragment as the main content.
         getFragmentManager()

@@ -146,4 +146,6 @@ public class GpsServices extends Service implements LocationListener, GpsStatus.
             data.setTimeStopped(timer);
         }
     }
+
+
 }

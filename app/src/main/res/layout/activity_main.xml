@@ -1,6 +1,5 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:fab="http://schemas.android.com/apk/res-auto"
-    xmlns:materialdesign="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:keepScreenOn="true">
@@ -156,33 +155,9 @@
         android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true" />
 
-    <TextView
-        android:id="@+id/titleDistance"
-        android:text="@string/distance"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="20sp"
-        android:textColor="@android:color/black"
-        android:layout_below="@id/separator2"
-        android:layout_marginTop="16dp"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_marginLeft="20dp"
-        android:layout_marginStart="20dp" />
 
-    <TextView
-        android:id="@+id/distance"
-        android:text=""
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="20sp"
-        android:textColor="@android:color/black"
-        android:layout_below="@id/separator2"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginTop="16dp"
-        android:layout_marginRight="20dp"
-        android:layout_marginEnd="20dp" />
+
+
 
     <View
         android:id="@+id/separator3"
@@ -190,37 +165,11 @@
         android:layout_height="1dp"
         android:background="@color/grey_lighter"
         android:layout_marginTop="16dp"
-        android:layout_below="@+id/distance"
+        android:layout_below="@+id/separator2"
         android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true" />
 
-    <TextView
-        android:id="@+id/titleTime"
-        android:text="@string/time"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="20sp"
-        android:textColor="@android:color/black"
-        android:layout_below="@id/separator3"
-        android:layout_marginTop="16dp"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_marginLeft="20dp"
-        android:layout_marginStart="20dp" />
 
-    <Chronometer
-        android:id="@+id/time"
-        android:text=""
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="20sp"
-        android:textColor="@android:color/black"
-        android:layout_below="@id/separator3"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginTop="16dp"
-        android:layout_marginRight="20dp"
-        android:layout_marginEnd="20dp" />
 
     <View
         android:id="@+id/separator4"
@@ -228,7 +177,7 @@
         android:layout_height="1dp"
         android:background="@color/grey_lighter"
         android:layout_marginTop="16dp"
-        android:layout_below="@+id/time"
+        android:layout_below="@+id/separator3"
         android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true" />
 
@@ -268,12 +217,13 @@
         android:layout_below="@+id/separator4"
         android:layout_centerHorizontal="true"/>
 
-    <TextView
+    <Button
         android:id="@+id/titleSatellite"
-        android:text="@string/satellite"
+        android:text="STRT"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="17sp"
+        android:onClick="goLog"
         android:textColor="@android:color/black"
         android:layout_below="@id/separator4"
         android:layout_toRightOf="@id/separator5"
